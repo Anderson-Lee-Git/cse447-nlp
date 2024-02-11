@@ -1,0 +1,5 @@
+torch
+transformers
+datasets
+tqdm
+gdown==v4.6.3
