@@ -30,8 +30,9 @@ def evaluate(model, dataloader):
 
 def main():
     device = "cuda"
-    model = AutoModelForMultipleChoice.from_pretrained("roberta-base").to(device)
-    tokenizer = AutoTokenizer.from_pretrained("roberta-base")
+    model_name = "WizardLM/WizardLM-13B-V1.1"
+    model = AutoModelForMultipleChoice.from_pretrained(model_name).to(device)
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
     OpenQADataset.tokenizer = tokenizer
     dataset_train = OpenQADataset("train")
     dataloader_train = DataLoader(dataset=dataset_train,
@@ -40,4 +41,5 @@ def main():
     evaluate(model, dataloader_train)
 
 if __name__ == "__main__":
+    
     main()

@@ -93,3 +93,50 @@ class OpenQADataset(Dataset):
             "text_encoding": {k: v.view(B, 4, -1) for (k, v) in text_encoding.items()},
             "label_encoding": label_encoding,
         }
+
+    @staticmethod
+    def q_collate_fn(batched_samples):
+        B = len(batched_samples)
+        batched_question = [OpenQADataset.format_question(sample.question_stem) for sample in batched_samples]
+        # Tokenize the input texts.
+        text_encoding = OpenQADataset.tokenizer(batched_question,
+                                                padding=True,
+                                                max_length=128,
+                                                truncation=True,
+                                                return_tensors="pt")
+        return {
+            "text_encoding": text_encoding
+        }
+    
+class GeneratedDataset(Dataset):
+    tokenizer: PreTrainedTokenizerFast = None
+
+    def __init__(self, path):
+        self.data = self.initialize_data(path)
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        return self.data[index]
+
+    def initialize_data(self, path):
+        f = open(path, "r")
+        data = []
+        for line in f.readlines():
+            data.append(line)
+        return data
+
+    @staticmethod
+    def collate_fn(batched_samples):
+        B = len(batched_samples)
+        # Tokenize the input texts.
+        # TODO: max length
+        text_encoding = OpenQADataset.tokenizer(batched_samples,
+                                                padding=True,
+                                                max_length=128,
+                                                truncation=True,
+                                                return_tensors="pt")
+        return {
+            "text_encoding": text_encoding
+        }
