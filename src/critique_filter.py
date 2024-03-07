@@ -43,10 +43,11 @@ def main():
     #pretty sure this is not correct: need format -> input = tokenizer(knowledge, response), so i'm thinking (prompt, gen)
     #but i'm not sure what the structure of raw_gen is so wasn't sure, can edit it --> wrote it this way for clarity
     prompts, raw_gens = samples['prompt'], samples['raw_gen']
-    inputs = tokenizer(prompts, raw_gens, return_tensors='pt', padding=True, truncation=True, max_length=512)
-    logits = model(**inputs).logits
-    for prompt, raw_gen in zip(prompts, raw_gens):
-      if(torch.sigmoid(logits) > 0.5):
+    inputs = tokenizer(prompts, raw_gens, return_tensors='pt', padding=True, truncation=True, max_length=512).to(model.device)
+    outputs = model(**inputs)
+    scores = [{"label": item["label"], "entailment": item["entailment"]} for item in outputs]
+    for prompt, raw_gen, score in zip(prompts, raw_gens, scores):
+      if(score['entailment'] > 0.5):
         json.dump({"prompt": prompt, "generated_response": gen}, write_file)
         write_file.write('\n')
     loop.update(1)
