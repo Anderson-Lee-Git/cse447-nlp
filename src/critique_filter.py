@@ -50,5 +50,9 @@ def main():
         json.dump({"prompt": prompt, "generated_response": gen}, write_file)
         write_file.write('\n')
     loop.update(1)
-      
-    
+
+#just copied it over
+if __name__ == "__main__":
+    os.environ["TRANSFORMERS_CACHE"] = "/gscratch/scrubbed/lee0618/cache/"
+    os.environ['HF_HOME'] = "/gscratch/scrubbed/lee0618/cache/"
+    main()    
