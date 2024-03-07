@@ -45,9 +45,9 @@ def main():
     prompts, raw_gens = samples['prompt'], samples['raw_gen']
     inputs = tokenizer(prompts, raw_gens, return_tensors='pt', padding=True, truncation=True, max_length=512).to(model.device)
     outputs = model(**inputs)
-    scores = [{"label": item["label"], "entailment": item["entailment"]} for item in outputs]
+    scores = [item["entailment"] for item in outputs]
     for prompt, raw_gen, score in zip(prompts, raw_gens, scores):
-      if(score['entailment'] > 0.5):
+      if(score > 0.5):
         json.dump({"prompt": prompt, "generated_response": gen}, write_file)
         write_file.write('\n')
     loop.update(1)
