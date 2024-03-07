@@ -41,7 +41,7 @@ def main():
   loop = tqdm(total=len(dataset) // dataloader.batch_size, position=0, leave=False)
   for i, samples in enumerate(dataloader):
     #pretty sure this is not correct: need format -> input = tokenizer(knowledge, response), so i'm thinking (prompt, gen)
-    #but i'm not sure what the structure of raw_gen is so wasn't sure, can edit it --> wrote it this way for clarity
+    #but i'm not sure what the structure of raw_gen is so wasn't sure, will edit it --> wrote it this way for clarity
     prompts, raw_gens = samples['prompt'], samples['raw_gen']
     inputs = tokenizer(prompts, raw_gens, return_tensors='pt', padding=True, truncation=True, max_length=512).to(model.device)
     outputs = model(**inputs)
