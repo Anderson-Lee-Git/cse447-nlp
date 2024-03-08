@@ -30,14 +30,14 @@ def main():
     for i, samples in enumerate(dataloader):
         inputs = samples["text_encoding"].input_ids.to(model.device)
         out = model.generate(inputs=inputs, 
-                             max_new_tokens=100, 
+                             max_new_tokens=50, 
                              do_sample=True, 
                              top_k=50,
                              top_p=0.95)
         generation = tokenizer.batch_decode(out, skip_special_tokens=True)
         output[i] = generation[0]
         loop.update(1)
-        json.dump(output, write_file)
+    json.dump(output, write_file)
 
 if __name__ == "__main__":
     os.environ["TRANSFORMERS_CACHE"] = "/gscratch/scrubbed/lee0618/cache/"
