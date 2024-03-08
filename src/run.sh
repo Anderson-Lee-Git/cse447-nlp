@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --job-name=teacher-generate
+#SBATCH --job-name=student-filter
 #SBATCH --account=jamiemmt
 #SBATCH --partition=gpu-a100
 #
@@ -21,4 +21,4 @@ export PATH=$PATH:$HOME/miniconda3/bin
 
 echo "---------start generation-----------"
 
-python /gscratch/scrubbed/lee0618/cse447-nlp/src/teacher_generate.py
+python /gscratch/scrubbed/lee0618/cse447-nlp/src/critique_filter.py

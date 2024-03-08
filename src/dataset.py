@@ -1,8 +1,11 @@
+from time import sleep
 import torch
 from torch.utils.data import Dataset
 from datasets import load_dataset
 from transformers import PreTrainedTokenizerFast
 from dataclasses import dataclass
+import json
+from langchain_community.retrievers import WikipediaRetriever
 
 @dataclass
 class OpenQASample:
@@ -110,33 +113,47 @@ class OpenQADataset(Dataset):
     
 class GeneratedDataset(Dataset):
     tokenizer: PreTrainedTokenizerFast = None
+    knowledge_retriever: WikipediaRetriever = None
 
     def __init__(self, path):
         self.data = self.initialize_data(path)
+        GeneratedDataset.knowledge_retriever = WikipediaRetriever()
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, index):
-        return self.data[index]
+        return self.data[str(index)]
 
     def initialize_data(self, path):
         f = open(path, "r")
-        data = []
-        for line in f.readlines():
-            data.append(line)
+        data = json.load(f)
         return data
 
     @staticmethod
-    def collate_fn(batched_samples):
+    def fact_check_collate_fn(batched_samples):
         B = len(batched_samples)
         # Tokenize the input texts.
         # TODO: max length
-        text_encoding = OpenQADataset.tokenizer(batched_samples,
-                                                padding=True,
-                                                max_length=128,
-                                                truncation=True,
-                                                return_tensors="pt")
+        
+        batched_knowledge = []
+        batched_response = []
+        for sample in batched_samples:
+            docs = GeneratedDataset.knowledge_retriever.get_relevant_documents(query=sample)
+            try:
+                batched_knowledge.append(docs[0].metadata["summary"])
+            except:
+                batched_knowledge.append("")
+            batched_response.append(sample)
+            sleep(0.1)
+        text_encoding = GeneratedDataset.tokenizer(batched_knowledge,
+                                                    batched_response,
+                                                    padding=True,
+                                                    max_length=256,
+                                                    truncation=True,
+                                                    return_tensors="pt")
         return {
-            "text_encoding": text_encoding
+            "batch_size": B,
+            "text_encoding": text_encoding,
+            "text": batched_response
         }
