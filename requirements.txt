@@ -4,3 +4,7 @@ datasets
 tqdm
 gdown==v4.6.3
 ipykernel
+evaluate
+wikipedia
+langchain_community
+langchain

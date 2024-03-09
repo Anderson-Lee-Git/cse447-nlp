@@ -11,7 +11,7 @@ import json
 @torch.no_grad()
 def main():
     device = "cuda"
-    write_to_path = "/gscratch/scrubbed/lee0618/cse447-nlp/src/data/raw_gen_text.json"
+    write_to_path = "/gscratch/scrubbed/lee0618/cse447-nlp/src/data/raw_gen_text_128.json"
     write_file = open(write_to_path, "w")
     batch_size = 1
     dataset = OpenQADataset(split="train")
@@ -30,7 +30,7 @@ def main():
     for i, samples in enumerate(dataloader):
         inputs = samples["text_encoding"].input_ids.to(model.device)
         out = model.generate(inputs=inputs, 
-                             max_new_tokens=50, 
+                             max_new_tokens=128, 
                              do_sample=True, 
                              top_k=50,
                              top_p=0.95)

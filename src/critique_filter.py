@@ -16,9 +16,9 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 def main():
     device = 'cuda'
     
-    read_path = "/gscratch/scrubbed/lee0618/cse447-nlp/src/data/raw_gen_text.json"
+    read_path = "/gscratch/scrubbed/lee0618/cse447-nlp/src/data/raw_gen_text_128.json"
     #file to store filtered text
-    write_to_path = "/gscratch/scrubbed/lee0618/cse447-nlp/src/data/filtered_text.json"
+    write_to_path = "/gscratch/scrubbed/lee0618/cse447-nlp/src/data/filtered_text_128.json"
     write_file = open(write_to_path, "w")
     filtered_text = {"data": []}
     

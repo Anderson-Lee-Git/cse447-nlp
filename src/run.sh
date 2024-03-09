@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-#SBATCH --job-name=student-filter
+#SBATCH --job-name=student-train
 #SBATCH --account=jamiemmt
 #SBATCH --partition=gpu-a100
 #
@@ -19,6 +19,13 @@
 
 export PATH=$PATH:$HOME/miniconda3/bin
 
-echo "---------start generation-----------"
+echo "---------start-----------"
 
-python /gscratch/scrubbed/lee0618/cse447-nlp/src/critique_filter.py
+echo "Teacher model generates raw text"
+python teacher_generate.py
+
+echo "Critique model filters generated text"
+python critique_filter.py
+
+echo "Train student model on filtered text"
+python train_student_model.py

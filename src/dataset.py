@@ -91,10 +91,10 @@ class OpenQADataset(Dataset):
                                                 return_tensors="pt")
         # unflatten
         label_encoding = torch.LongTensor(OpenQADataset.format_answer_keys(batched_answer_key))  # B, 1
-
         return {
-            "text_encoding": {k: v.view(B, 4, -1) for (k, v) in text_encoding.items()},
+            "text_encoding": {k: v.view(B, -1) for (k, v) in text_encoding.items()},
             "label_encoding": label_encoding,
+            "batch_size": B
         }
 
     @staticmethod
@@ -128,7 +128,27 @@ class GeneratedDataset(Dataset):
     def initialize_data(self, path):
         f = open(path, "r")
         data = json.load(f)
+        # filtered text has different format
+        # make it compatible with raw text format
+        if "data" in data.keys():
+            reform_data = {}
+            for i, sentence in enumerate(data["data"]):
+                reform_data[str(i)] = sentence
+            data = reform_data
+        print("Initialized dataset")
         return data
+
+    @staticmethod
+    def collate_fn(batched_samples):
+        B = len(batched_samples)
+        text_encoding = GeneratedDataset.tokenizer(batched_samples,
+                                                    padding=True,
+                                                    max_length=256,
+                                                    truncation=True,
+                                                    return_tensors="pt")
+        return {
+            "text_encoding": text_encoding
+        }
 
     @staticmethod
     def fact_check_collate_fn(batched_samples):
