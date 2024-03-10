@@ -9,13 +9,13 @@ Original file is located at
 <a href="https://colab.research.google.com/github/Anderson-Lee-Git/cse447-nlp/blob/main/src/sample_evaluation.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 """
 
-!pip install torch transformers datasets tqdm gdown==v4.6.3
-
 """# Dataset"""
+
+cache_dir = "/gscratch/scrubbed/lee0618/cache"
 
 from datasets import load_dataset
 
-dataset = load_dataset("openbookqa")
+dataset = load_dataset("openbookqa", cache_dir=cache_dir)
 dataset_train, dataset_valid, dataset_test = dataset["train"], dataset["validation"], dataset["test"]
 print(dataset_train)
 print(dataset_valid)
@@ -73,7 +73,7 @@ class OpenQADataset(Dataset):
 
     @staticmethod
     def get_openqa(split):
-        dataset = load_dataset("openbookqa")
+        dataset = load_dataset("openbookqa", cache_dir=cache_dir)
         return dataset[split]
 
     @staticmethod
@@ -166,8 +166,6 @@ print(f'device: {device}')
 
 """## Dependencies"""
 
-! pip install datasets
-! pip install -U sentence-transformers
 import torch
 import random
 from tqdm import tqdm
@@ -305,9 +303,9 @@ from transformers import AutoTokenizer, AutoModelForMultipleChoice, AutoModelFor
 # tokenizer2 = LlamaTokenizer.from_pretrained("/output/path")
 
 # tokenizer3 = RobertaTokenizer.from_pretrained('roberta-base')
-model3 = AutoModelForCausalLM.from_pretrained('roberta-base').cuda()
+model3 = AutoModelForCausalLM.from_pretrained('roberta-base', cache_dir=cache_dir).cuda()
 
-tokenizer3 = AutoTokenizer.from_pretrained('roberta-base', padding_side = 'left')
+tokenizer3 = AutoTokenizer.from_pretrained('roberta-base', padding_side = 'left', cache_dir=cache_dir)
 tokenizer3.pad_token_id = tokenizer3.eos_token_id
 model3.config.pad_token_id = tokenizer3.eos_token_id
 
@@ -321,7 +319,7 @@ print(f"first answer key sample: {dataset_train['answerKey'][0]}")
 """##Main methods of the Algo"""
 
 def preprocess(dataset):
-  dataset = load_dataset(dataset)
+  dataset = load_dataset(dataset, cache_dir=cache_dir)
   dataset_train, dataset_valid, dataset_test = dataset["train"], dataset["validation"], dataset["test"]
 
   concat_prompts_train = []
@@ -451,6 +449,7 @@ def train_batching_closed(model, optimizer, tokenizer, lr=1e-4, batch_size=1, ep
   total_correct = 0
   total = 0
   for epoch in range(epochs):
+    loop = tqdm(total=len(prompts_train) / batch_size, leave=False, pos=0)
     for i in range(0, len(prompts_train), batch_size):
       batch_prompts = prompts_train[i:i+batch_size]
       flattened_batch_prompts = [item for sublist in batch_prompts for item in sublist]
@@ -488,6 +487,8 @@ def train_batching_closed(model, optimizer, tokenizer, lr=1e-4, batch_size=1, ep
       loss.backward()
       optimizer.step()
       losses.append(loss.item())
+      loop.update(1)
+      loop.set_description(f"loss: {loss.item():.4f}")
 
     print('percent accuracy train', total_correct/total)
     train_accuracies.append(total_correct/total)
@@ -509,16 +510,18 @@ print(losses)
 
 from matplotlib import pyplot as plt
 # plot_train = [loss.detach for loss in train_losses]
+fig = plt.figure()
 plt.plot(losses)
 
 plt.xlabel('Iteration')
 plt.ylabel('Loss')
 plt.title('Train loss vs Iteration')
-plt.show()
+plt.savefig("/gscratch/scrubbed/lee0618/cse447-nlp/src/plots/loss_ft_openbookqa.png")
 
 print(train_accuracies)
 print(log_valid_accuracies)
 print(open_valid_accuracies)
+fig = plt.figure()
 plt.plot(train_accuracies, label='train')
 plt.plot(log_valid_accuracies, label='log validation')
 plt.plot(open_valid_accuracies, label='open validation')
@@ -526,12 +529,13 @@ plt.xlabel('Epoch')
 plt.ylabel('Accuracy')
 plt.title('Accuracy vs Epoch')
 plt.legend()
+plt.savefig("/gscratch/scrubbed/lee0618/cse447-nlp/src/plots/acc_ft_openbookqa.png")
 
 """## Fine-tuning
 
 """
 
-dataset2 = load_dataset('sciq')
+dataset2 = load_dataset('sciq', cache_dir=cache_dir)
 sci_dataset_train2, sci_dataset_valid2, sci_dataset_test2 = dataset2["train"], dataset2["validation"], dataset2["test"]
 
 print(sci_dataset_train2[0])
@@ -618,3 +622,23 @@ optimizer = AdamW(model3.parameters(), lr=1e-4)
 losses, train_accuracies, log_valid_accuracies, open_valid_accuracies = train_batching_closed(model3, optimizer, tokenizer3, batch_size = 16, epochs = 3)
 print(losses)
 
+fig = plt.figure()
+plt.plot(losses)
+
+plt.xlabel('Iteration')
+plt.ylabel('Loss')
+plt.title('Train loss vs Iteration')
+plt.savefig("/gscratch/scrubbed/lee0618/cse447-nlp/src/plots/loss_ft_sciq.png")
+
+print(train_accuracies)
+print(log_valid_accuracies)
+print(open_valid_accuracies)
+fig = plt.figure()
+plt.plot(train_accuracies, label='train')
+plt.plot(log_valid_accuracies, label='log validation')
+plt.plot(open_valid_accuracies, label='open validation')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.title('Accuracy vs Epoch')
+plt.legend()
+plt.savefig("/gscratch/scrubbed/lee0618/cse447-nlp/src/plots/acc_ft_sciq.png")
