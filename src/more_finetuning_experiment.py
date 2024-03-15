@@ -9,13 +9,12 @@ Original file is located at
 <a href="https://colab.research.google.com/github/Anderson-Lee-Git/cse447-nlp/blob/main/src/sample_evaluation.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 """
 
-!pip install torch transformers datasets tqdm gdown==v4.6.3
-
 """# Dataset"""
+cache_dir = "/gscratch/scrubbed/lee0618/cache"
 
 from datasets import load_dataset
 
-dataset = load_dataset("openbookqa")
+dataset = load_dataset("openbookqa", cache_dir=cache_dir)
 dataset_train, dataset_valid, dataset_test = dataset["train"], dataset["validation"], dataset["test"]
 # print(dataset_train)
 # print(dataset_valid)
@@ -73,7 +72,7 @@ class OpenQADataset(Dataset):
 
     @staticmethod
     def get_openqa(split):
-        dataset = load_dataset("openbookqa")
+        dataset = load_dataset("openbookqa", cache_dir=cache_dir)
         return dataset[split]
 
     @staticmethod
@@ -166,8 +165,6 @@ print(f'device: {device}')
 
 """## Dependencies"""
 
-! pip install datasets
-! pip install -U sentence-transformers
 import torch
 import random
 from tqdm import tqdm
@@ -188,6 +185,7 @@ def evaluate_log_likelihood(model, optimizer, tokenizer, prompts, concat_prompts
   concat_prompts = [sublist[-1] for sublist in concat_prompts]
   total_correct = 0
   total = 0
+  loop = tqdm(total=len(prompts) // batch_size, leave=True, position=0)
   with torch.no_grad():
     for i in range(0, len(prompts), batch_size):
       batch_prompts = prompts[i:i+batch_size]
@@ -218,6 +216,7 @@ def evaluate_log_likelihood(model, optimizer, tokenizer, prompts, concat_prompts
       total += len(matching_mask)
 
       prob = prob.requires_grad_(True)
+      loop.update(1)
 
     print('percent accuracy log', total_correct/total)
     return total_correct/total
@@ -250,6 +249,7 @@ def evaluate_open_gen(model, similarity_model, tokenizer, concat_prompts, max_ne
 
   total_correct = 0
   total = 0
+  loop = tqdm(total=len(prompts) // batch_size, leave=True, position=0)
   with torch.no_grad():
     for i in range(0, len(prompts), batch_size):
 
@@ -287,6 +287,7 @@ def evaluate_open_gen(model, similarity_model, tokenizer, concat_prompts, max_ne
       num_matches = torch.sum(matching_mask).item()
       total_correct += num_matches
       total += len(matching_mask)
+      loop.update(1)
     print("Accuracy open:", total_correct/total)
     return total_correct/total
 
@@ -301,22 +302,24 @@ from transformers import AutoTokenizer, AutoModelForMultipleChoice, AutoModelFor
 # tokenizer2 = LlamaTokenizer.from_pretrained("/output/path")
 
 # tokenizer3 = RobertaTokenizer.from_pretrained('roberta-base')
-model3 = AutoModelForCausalLM.from_pretrained('roberta-base').to(device)
-tokenizer3 = AutoTokenizer.from_pretrained('roberta-base', padding_side = 'left')
+model3 = AutoModelForCausalLM.from_pretrained('roberta-base', cache_dir=cache_dir).to(device)
+tokenizer3 = AutoTokenizer.from_pretrained('roberta-base', padding_side = 'left', cache_dir=cache_dir)
 tokenizer3.pad_token_id = tokenizer3.eos_token_id
 model3.config.pad_token_id = tokenizer3.eos_token_id
 
 
-model1 = AutoModelForCausalLM.from_pretrained('roberta-base').to(device)
-tokenizer1 = AutoTokenizer.from_pretrained('roberta-base', padding_side = 'left')
+model1 = AutoModelForCausalLM.from_pretrained('roberta-base', cache_dir=cache_dir).to(device)
+tokenizer1 = AutoTokenizer.from_pretrained('roberta-base', padding_side = 'left', cache_dir=cache_dir)
 tokenizer1.pad_token_id = tokenizer1.eos_token_id
 model1.config.pad_token_id = tokenizer1.eos_token_id
 
 """##Main methods of the Algo"""
 
 def preprocess(dataset):
-  dataset = load_dataset(dataset)
+  dataset = load_dataset(dataset, cache_dir=cache_dir)
   dataset_train, dataset_valid, dataset_test = dataset["train"], dataset["validation"], dataset["test"]
+
+#   dataset_valid = dataset_test
 
   concat_prompts_train = []
   concat_prompts_valid = []
@@ -396,7 +399,9 @@ def train_batching_closed(model, optimizer, tokenizer, prompts_train, prompts_va
 
   total_correct = 0
   total = 0
+
   for epoch in range(epochs):
+    loop = tqdm(total=len(prompts_train) // batch_size, leave=True, position=0)
     for i in range(0, len(prompts_train), batch_size):
       batch_prompts = prompts_train[i:i+batch_size]
       flattened_batch_prompts = [item for sublist in batch_prompts for item in sublist]
@@ -435,6 +440,8 @@ def train_batching_closed(model, optimizer, tokenizer, prompts_train, prompts_va
       optimizer.step()
       losses.append(loss.item())
 
+      loop.update(1)
+
     print('percent accuracy train', total_correct/total)
     train_accuracies.append(total_correct/total)
     log_acc = evaluate_log_likelihood(model, optimizer, tokenizer, prompts_valid, concat_prompts_valid, batch_size=batch_size)
@@ -452,13 +459,14 @@ concat_prompts_train, concat_prompts_valid, concat_prompts_test, prompts_train, 
 
 """
 
-dataset2 = load_dataset('sciq')
+dataset2 = load_dataset('sciq', cache_dir=cache_dir)
 sci_dataset_train2, sci_dataset_valid2, sci_dataset_test2 = dataset2["train"], dataset2["validation"], dataset2["test"]
 
 import numpy as np
 import random
 def preprocess_finetune_sqi(dataset):
   dataset_train, dataset_valid, dataset_test = dataset['train'], dataset['validation'], dataset['test']
+#   dataset_valid = dataset_test
 
   new_prompts_train = [row['question'] + ' Evidence: ' + row['support'] for row in dataset_train]
   new_prompts_valid = [row['question'] + ' Evidence: ' + row['support'] for row in dataset_valid]
@@ -528,16 +536,21 @@ sci_concat_prompts_train, sci_concat_prompts_valid, sci_prompts_train, sci_promp
 
 """## Run shit"""
 
+print("Finetune on openbookQA")
 optimizer2 = AdamW(model1.parameters(), lr=1e-4)
 losses, train_accuracies, log_valid_accuracies, open_valid_accuracies = train_batching_closed(model1, optimizer2, tokenizer1, prompts_train, prompts_valid, concat_prompts_train, concat_prompts_valid)
+print("Evaluation on openbookQA")
 log_acc = evaluate_log_likelihood(model1, optimizer2, tokenizer1, prompts_valid, concat_prompts_valid, batch_size=16)
 open_acc = evaluate_open_gen(model1, similarity_model, tokenizer1, concat_prompts_valid, max_new_tokens = 20, batch_size = 16)
 print('log_acc', log_acc)
 print('open_acc', open_acc)
 
+print("Finetune on SciQ")
 optimizer = AdamW(model3.parameters(), lr=1e-4)
-losses, train_accuracies, log_valid_accuracies, open_valid_accuracies = train_batching_closed(model3, optimizer, tokenizer3, sci_prompts_train, sci_prompts_valid, sci_concat_prompts_train, sci_concat_prompts_valid)
+losses, train_accuracies, log_valid_accuracies, open_valid_accuracies = train_batching_closed(model3, optimizer, tokenizer3, sci_prompts_train, sci_prompts_valid, sci_concat_prompts_train, sci_concat_prompts_valid, batch_size=16)
+print("Finetune on openbookQA")
 losses, train_accuracies, log_valid_accuracies, open_valid_accuracies = train_batching_closed(model3, optimizer, tokenizer3, prompts_train, prompts_valid, concat_prompts_train, concat_prompts_valid)
+print("Evaluation on openbookQA")
 log_acc = evaluate_log_likelihood(model3, optimizer, tokenizer3, prompts_valid, concat_prompts_valid, batch_size=16)
 open_acc = evaluate_open_gen(model3, similarity_model, tokenizer3, concat_prompts_valid, max_new_tokens = 20, batch_size = 16)
 print('log_acc', log_acc)

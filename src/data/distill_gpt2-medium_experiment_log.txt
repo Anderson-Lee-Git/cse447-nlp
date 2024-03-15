@@ -1,0 +1,28 @@
+=====Direct evaluation on OpenbookQA test=====
+test accuracy = 0.25
+=====Fine tune on OpenbookQA=====
+epoch 1
+validation accuracy = 0.5020000338554382
+epoch 2
+validation accuracy = 0.5120000243186951
+test accuracy = 0.4580000340938568
+=====Distill on raw text and finetune on openbookQA=====
+epoch 1
+validation accuracy = 0.2460000067949295
+test accuracy = 0.29200002551078796
+Finetune on openbookQA
+epoch 1
+validation accuracy = 0.5060000419616699
+epoch 2
+validation accuracy = 0.5120000243186951
+test accuracy = 0.4740000367164612
+=====Distill on filtered text and finetune on openbookQA=====
+epoch 1
+validation accuracy = 0.23400001227855682
+test accuracy = 0.2900000214576721
+Finetune on openbookQA
+epoch 1
+validation accuracy = 0.5060000419616699
+epoch 2
+validation accuracy = 0.5260000228881836
+test accuracy = 0.46000000834465027

@@ -92,7 +92,7 @@ class OpenQADataset(Dataset):
         # unflatten
         label_encoding = torch.LongTensor(OpenQADataset.format_answer_keys(batched_answer_key))  # B, 1
         return {
-            "text_encoding": {k: v.view(B, -1) for (k, v) in text_encoding.items()},
+            "text_encoding": {k: v.view(B * 4, -1) for (k, v) in text_encoding.items()},
             "label_encoding": label_encoding,
             "batch_size": B
         }

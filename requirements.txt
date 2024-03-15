@@ -8,3 +8,5 @@ evaluate
 wikipedia
 langchain_community
 langchain
+matplotlib
+sentence-transformers
